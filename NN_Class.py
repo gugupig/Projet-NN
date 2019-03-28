@@ -108,4 +108,3 @@ xor.bias =[np.array([1,1]),np.array([-1])]
 out = xor.feed_forward(np.array([-1,1]))
 for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]:
     print(xin,int(xor.feed_forward(xin)[0]))
-    print('ok')

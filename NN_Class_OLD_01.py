@@ -60,6 +60,7 @@ class NN:
         self.act = [x]
         self.z = []
         counter = 0
+        #print('FORD weights',weights)
         for w,b in zip(weights,bias):
             curr_input = np.dot(curr_output,w)+b
             self.z.append(curr_input)
@@ -94,6 +95,7 @@ class NN:
     
     def act_sig(self,x,mode = 'ford'):
         result = np.array([])
+        
         if mode == 'ford':            
             for i in x:
                 result = np.append(result,(1./(1.+np.exp(-i))))
@@ -117,11 +119,11 @@ class NN:
         result = np.array([])
         if mode == 'ford':
             for i in x:
-                tanh = 1.0 - np.exp(-2*i)/(1.0 + np.exp(-2*i))
+                tanh = (1.0 - np.exp(-2*i))/(1.0 + np.exp(-2*i))
                 result = np.append(result,tanh)
         elif mode == 'back':
             for i in x :
-                tanh = 1.0 - np.exp(-2*i)/(1.0 + np.exp(-2*i))
+                tanh = (1.0 - np.exp(-2*i))/(1.0 + np.exp(-2*i))
                 result = np.append(result,(1 + tanh)*(1 - tanh))
         return result
     
@@ -144,7 +146,10 @@ class NN:
         if mode == 'ford':
             return y_gold-y_pred
         elif mode == 'back':
-            return -1.*y_pred
+            return -1
+    
+    def act_test(self,x):
+        return x
         
     
     def GD(self,x_0,grad_f,tau,n_iteration):
@@ -163,8 +168,8 @@ class NN:
         inverse_bias = bias[::-1]
         inverse_z = self.z[::-1]
         c = 0
-        print('weights',weights)
-        print('bias',bias)
+        print('BACK weights',weights)
+        print('BACK bias',bias)
         print('--------LOOP BEGINGS!--------')
         for i in range(len(inverse_weights)):
             print('LOOP = ' ,c)
@@ -185,20 +190,20 @@ class NN:
             print('dl_dz = ',dl_dz)
             print('=============')
             print('dl_da = dot (dl_dz,inverse_weights[i].T)')
-            print('dl_dz = ',dl_dz)
-            print('inverse_weight = ',inverse_weights[i].T)
+            print('dl_dz = ',dl_dz,dl_dz.shape)
+            print('inverse_weight = ',inverse_weights[i],inverse_weights[i].shape)
             if len(dl_dz)==1:
-                dl_da = np.multiply(dl_dz,inverse_weights[i].T)
+                dl_da = np.dot(inverse_weights[i],dl_dz)
             else:
-                dl_da = np.dot(inverse_weights[i].T,dl_dz)
-            print ('dl_da = ',dl_da)
+                dl_da = np.dot(inverse_weights[i],dl_dz)
+            print ('dl_da = ',dl_da,dl_da.shape)
             print('=============')
             print('new weight_grad  = inva.T * dl_dz')
-            print('inva.T = ',inverse_act[i+1].T,inverse_act[i+1].T.shape)
+            print('inva.T = ',inverse_act[i+1],inverse_act[i+1].shape)
             print('dl_dz = ',dl_dz,dl_dz.shape)
-            #print('new grad = ',self.matrix_multiply(dl_dz.T,inverse_act[i+1]))
-            #weight_grad.append((self.matrix_multiply(dl_dz.T,inverse_act[i+1])).T)
-            weight_grad.append(np.dot(dl_dz,inverse_act[i+1].T))
+            print('new grad = ',self.matrix_multiply(dl_dz.T,inverse_act[i+1]),self.matrix_multiply(dl_dz.T,inverse_act[i+1]).shape)
+            weight_grad.append((self.matrix_multiply(dl_dz.T,inverse_act[i+1])).T)
+            #weight_grad.append(np.dot(dl_dz,inverse_act[i+1].T))
             #print('new weight_grad = ',np.dot(dl_dz,inverse_act[i+1]))
             #weight_grad.append(np.dot(dl_dz,inverse_act[i+1])/inverse_act[i+1].shape[0])
             print('weight_grad_matrix = ',weight_grad[::-1])
@@ -212,33 +217,38 @@ class NN:
     
 
 
-    def train(self,examples,batchsize = 1,epoch = 1,learning_rate =1):
+    def train(self,examples,batchsize = 4,epoch = 1,learning_rate =0.1):
         total_loss = 0
         self.initialisation(examples[0][0],examples[0][1])
         print('initial:',self.weights)
         for i in range (epoch):
             weights,bias = self.weights,self.bias #update the weights and bias after one epoch
-            print('initial2:',self.weights)
+            print('initial2:',weights)
             for example in examples[:batchsize]:
                 y_pred = self.feed_forward(weights,bias,example[0]) #use the same weights and bias to calculate 
+                print('DIFF_W:', weights,self.weights)
+                print('DIFF_B:',bias,self.bias)
                 print('YP:',y_pred)
                 loss = self.loss_func(example[1],y_pred,'ford')
                 print('LOSS',loss)
                 initial_grad = self.loss_func(example[1],y_pred,'back')
                 print('IG',initial_grad)
                 weight_grad,bias_grad = self.backward(initial_grad,weights,bias)
+                print('============================')
+                print("weights before:",self.weights)
+                print("bias before:",self.bias)
                 for j in range(len(self.weights)):
-                    print('@@@@@@@@@@@@@@@@@@@@@@@@')
-                    print("before:",self.weights)
                     print('============')
                     print('weight:',self.weights[j],self.weights[j].shape)
                     print('grad:',learning_rate* (1./batchsize)* weight_grad[j],(learning_rate* (1./batchsize)* weight_grad[j]).shape)
                     print('W-G:',self.weights[j] -  learning_rate* (1./batchsize)* weight_grad[j])
                     print('============')
                     self.weights[j] = self.weights[j] -  learning_rate* (1./batchsize)* weight_grad[j]
-                    print("after:",self.weights)
+                    
                 for k in range(len(self.bias)):
                     self.bias[k] = self.bias[k] - learning_rate* (1./batchsize)* bias_grad[k]
+                print("bias after:",self.bias)
+                print("weights after:",self.weights)
             total_loss = total_loss + (1./batchsize)*loss
             print('*****************************************')
             print ('TOTAL LOSS:',total_loss)
@@ -263,10 +273,18 @@ for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]
 xor_1 = NN([2],'tanh','tanh','sub')
 exs = [(np.array([1,1]),-1),(np.array([-1,-1]),-1),(np.array([1,-1]),1),(np.array([-1,1]),1)]
 exs_1 = [(np.array([1,1]),0),(np.array([0,0]),0),(np.array([1,0]),1),(np.array([0,1]),1)]
-xor_1.train(exs_1,4,1,1)
+xor_1.train(exs_1,4,10000,0.1)
 for xin in [np.array([1,1]),np.array([0,0]),np.array([1,0]),np.array([0,1])]:
     predit = xor_1.predit(xin)
-    print(predit)
+    print('PREDIT:',predit)
 
-
-
+'''
+xor_2 = NN([2],'sigmoid','sigmoid','sub')
+x = np.array([1])
+y = np.array([0])
+xor_2.weights = [np.array([[1,0]]),np.array([[1,0]]).T]
+xor_2.bias = [np.ones((2,)),np.ones((1,))]
+re = xor_2.feed_forward(xor_2.weights,xor_2.bias,x)
+ig = xor_2.loss_func(y,re,'back')
+wg,bg = xor_2.backward(ig,xor_2.weights,xor_2.bias)
+'''

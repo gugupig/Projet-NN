@@ -5,6 +5,8 @@ Created on Tue Mar 26 10:37:38 2019
 @author: Kurros
 """
 import numpy as np
+from matplotlib.colors import ListedColormap
+import matplotlib.pyplot as plt
 
 
 class NN:
@@ -45,7 +47,7 @@ class NN:
             raise Exception('Please specify loss funciton')
             
             
-    def matrix_multiply(self,a,b):
+    def vector_multiply(self,a,b):
         multiply = np.zeros((a.shape[0],b.shape[0]))
         for i in range(a.shape[0]):
             for j in range(b.shape[0]):
@@ -152,26 +154,26 @@ class NN:
         bias_grad = []
         inverse_weights = weights[::-1]
         inverse_act = self.act[::-1]
-        inverse_bias = bias[::-1]
         inverse_z = self.z[::-1]
         for i in range(len(inverse_weights)):
-            dl_dz = np.multiply(dl_da , self.activate(inverse_z[i],'back'))
-            if len(dl_dz)==1:
-                dl_da = np.dot(inverse_weights[i],dl_dz)
+            if i == 0:
+                dl_dz = np.multiply(dl_da , self.output_func(inverse_z[i],'back'))
             else:
-                dl_da = np.dot(inverse_weights[i],dl_dz)
-            weight_grad.append((self.matrix_multiply(dl_dz.T,inverse_act[i+1])).T)      
+                dl_dz = np.multiply(dl_da , self.activate(inverse_z[i],'back'))
+            dl_da = np.dot(inverse_weights[i],dl_dz)
+            weight_grad.append((self.vector_multiply(dl_dz.T,inverse_act[i+1])).T)      
             bias_grad.append(dl_dz)
         return weight_grad[::-1],bias_grad[::-1]
     
 
 
     def train(self,examples,batchsize = 4,epoch = 1,learning_rate =0.1):
-        total_loss = 0
-        self.initialisation(examples[0][0],examples[0][1])
-
+        loss = 0
+        self.initialisation(examples[0][0],examples[0][1])  
         for i in range (epoch):
-            weights,bias = self.weights,self.bias #update the weights and bias after one epoch)
+            if i%1000 == 0 and i!=0:
+                print ('Total loss at epcho',i, loss)
+            weights,bias = self.weights,self.bias #update the weights and bias after one epoch
             for example in examples[:batchsize]:
                 y_pred = self.feed_forward(weights,bias,example[0]) #use the same weights and bias to calculate )
                 loss = self.loss_func(example[1],y_pred,'ford')
@@ -181,7 +183,7 @@ class NN:
                     self.weights[j] = self.weights[j] -  learning_rate* (1./batchsize)* weight_grad[j]             
                 for k in range(len(self.bias)):
                     self.bias[k] = self.bias[k] - learning_rate* (1./batchsize)* bias_grad[k]
-            total_loss = total_loss + (1./batchsize)*loss
+                loss +=(1./batchsize)*loss
         self.final_weights = self.weights
         self.final_bias = self.bias
         
@@ -201,10 +203,10 @@ for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]
     print(xin,int(xor.feed_forward(xor.weights,xor.bias,xin)[0]))
 
 xor_1 = NN([2],'tanh','tanh','sqrt')
-exs = [(np.array([1,1]),-1),(np.array([-1,-1]),-1),(np.array([1,-1]),1),(np.array([-1,1]),1)]
 exs_1 = [(np.array([1,1]),0),(np.array([0,0]),0),(np.array([1,0]),1),(np.array([0,1]),1)]
 xor_1.train(exs_1,4,10000,0.1)
 for xin in [np.array([1,1]),np.array([0,0]),np.array([1,0]),np.array([0,1])]:
     predit = xor_1.predit(xin)
-    print('PREDIT:',xin,predit)
+    print('XOR_PREDIT:',xin,predit)
+
 

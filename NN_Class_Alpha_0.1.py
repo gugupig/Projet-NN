@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """
 Created on Tue Mar 26 10:37:38 2019
 
 @author: Kurros
 """
 import numpy as np
-from matplotlib.colors import ListedColormap
+#from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 
 
@@ -48,10 +48,16 @@ class NN:
             
             
     def vector_multiply(self,a,b):
-        multiply = np.zeros((a.shape[0],b.shape[0]))
-        for i in range(a.shape[0]):
-            for j in range(b.shape[0]):
-                multiply[i][j] = a[i]*b[j]
+        if a.shape == ():
+            multiply = np.zeros((1,b.shape[0]))
+            for i in range(1):
+                for j in range(b.shape[0]):
+                    multiply[i][j] = a*b[j]
+        else:
+            multiply = np.zeros((a.shape[0],b.shape[0]))
+            for i in range(a.shape[0]):
+                for j in range(b.shape[0]):
+                    multiply[i][j] = a[i]*b[j]
         return multiply
             
     def feed_forward(self,weights,bias,x):
@@ -122,21 +128,50 @@ class NN:
                 result = np.append(result,(1 + tanh)*(1 - tanh))
         return result
     
-    def softmax(self,x,mode = 'ford'):
-        pass
+    def softmax(self,x,mode = 'ford',onehot = True):
+        ex = np.exp(x- np.max(x))
+        if mode == 'ford':
+            return ex/ex.sum()
+        if mode == 'back':
+            ford = self.softmax(x,mode = 'ford')
+            jacobian = np.zeros((ford.size,ford.size))
+            for i in range(len(jacobian)):
+                for j in range(len(jacobian)):
+                    if i == j:
+                        jacobian[i][j] = ford[i]*(1-ford[j])
+                    else:
+                        jacobian[i][j] = -1*ford[i]*ford[j]
+        return jacobian
     
     def act_relu(self,x,mode = 'ford'):
         pass
     
-        
-    def loss_cross_entro(self,y_glod,y_pred,mode = 'ford'):
-        pass
+    """
+    def loss_cross_entro(self,y_gold,y_pred,mode = 'ford'):
+        index_gold = np.nonzero(y_gold)[0][0]    #one-hot version
+        if mode == 'ford':
+            loss = -1*(np.log(y_pred[index_gold]))
+            return loss
+        if mode == 'back':
+            return -1/y_pred[index_gold]
+
+    """
+    def loss_cross_entro(self,y_gold,y_pred,mode = 'ford'):
+        index_gold = np.nonzero(y_gold)[0][0]
+        dot_product = np.dot(-1*y_gold,np.log(y_pred))
+        if mode == 'ford':
+            return dot_product
+        if mode == 'back':
+            derive = np.zeros(y_pred.shape)
+            derive[index_gold] = -1/y_pred[index_gold]
+            return derive
     
+    #需要修改成向量版本
     def loss_sqrt(self,y_gold,y_pred,mode = 'ford'):
         if mode == 'ford':
             return 0.5*(y_gold-y_pred)**2
         elif mode == 'back':
-            return -(y_gold-y_pred)
+            return -(y_gold-y_pred)        
     
     def act_test(self,x):
         return x
@@ -156,11 +191,17 @@ class NN:
         inverse_act = self.act[::-1]
         inverse_z = self.z[::-1]
         for i in range(len(inverse_weights)):
+            #需要修改适应非向量（2，1）无法与(2,)dot product
             if i == 0:
-                dl_dz = np.multiply(dl_da , self.output_func(inverse_z[i],'back'))
+                #dl_dz = np.multiply(dl_da , self.output_func(inverse_z[i],'back'))
+                dl_dz = np.dot(dl_da,self.output_func(inverse_z[i],'back'))
             else:
-                dl_dz = np.multiply(dl_da , self.activate(inverse_z[i],'back'))
-            dl_da = np.dot(inverse_weights[i],dl_dz)
+                #print(dl_da.shape)
+                #print(self.activate(inverse_z[i],'back').shape)
+                dl_dz = np.dot(dl_da,self.activate(inverse_z[i],'back'))
+                #dl_dz = np.dot(dl_da,self.activate(inverse_z[i],'back').reshape(dl_da.shape).T)
+                #dl_dz = np.multiply(dl_da , self.activate(inverse_z[i],'back'))
+            dl_da = np.dot(inverse_weights[i],dl_dz)        
             weight_grad.append((self.vector_multiply(dl_dz.T,inverse_act[i+1])).T)      
             bias_grad.append(dl_dz)
         return weight_grad[::-1],bias_grad[::-1]
@@ -169,10 +210,14 @@ class NN:
 
     def train(self,examples,batchsize = 4,epoch = 1,learning_rate =0.1):
         loss = 0
+        loss_log = []
+        i_log = []
         self.initialisation(examples[0][0],examples[0][1])  
         for i in range (epoch):
             if i%1000 == 0 and i!=0:
-                print ('Total loss at epcho',i, loss)
+                loss_log.append(loss)
+                i_log.append(i)
+                print ('Total loss at epoch',i, loss)
             weights,bias = self.weights,self.bias #update the weights and bias after one epoch
             for example in examples[:batchsize]:
                 y_pred = self.feed_forward(weights,bias,example[0]) #use the same weights and bias to calculate )
@@ -184,6 +229,10 @@ class NN:
                 for k in range(len(self.bias)):
                     self.bias[k] = self.bias[k] - learning_rate* (1./batchsize)* bias_grad[k]
                 loss +=(1./batchsize)*loss
+        plt.ylabel('Total Loss')
+        plt.xlabel('Epoch')
+        plt.plot(i_log,loss_log)
+        plt.show()
         self.final_weights = self.weights
         self.final_bias = self.bias
         
@@ -195,6 +244,7 @@ class NN:
         else:
             return self.feed_forward(self.final_weights,self.final_bias,x)
 
+"""
 xor = NN([2],'sign','sign','cross')
 xor.weights = [np.array([[-1,1],[-1,1]]),np.array([1,1])]
 xor.bias =[np.array([1,1]),np.array([-1])]
@@ -204,9 +254,32 @@ for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]
 
 xor_1 = NN([2],'tanh','tanh','sqrt')
 exs_1 = [(np.array([1,1]),0),(np.array([0,0]),0),(np.array([1,0]),1),(np.array([0,1]),1)]
-xor_1.train(exs_1,4,10000,0.1)
+xor_1.train(exs_1,4,50000,0.08)
 for xin in [np.array([1,1]),np.array([0,0]),np.array([1,0]),np.array([0,1])]:
     predit = xor_1.predit(xin)
     print('XOR_PREDIT:',xin,predit)
 
 
+  
+xor_2 = NN([2],'tanh','tanh','sqrt')
+exs_2 = [(np.array([1,1]),-1),(np.array([-1,-1]),-1),(np.array([1,-1]),1),(np.array([-1,1]),1)]
+xor_2.train(exs_2,4,50000,0.1)
+for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]:
+    predit = xor_2.predit(xin)
+    print('XOR_PREDIT2:',xin,predit)
+"""
+xor_3 = NN([10],'sigmoid','softmax','cross')
+exs_3 = [(np.array([1,1]),np.array([0,1])),(np.array([-1,-1]),np.array([0,1])),(np.array([1,-1]),np.array([1,0])),(np.array([-1,1]),np.array([1,0]))]
+xor_3.train(exs_3,4,10000,0.1)
+for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]:
+    predit = xor_3.predit(xin)
+    print('XOR_PREDIT3:',xin,predit)
+
+
+xor_4 = NN([10],'sigmoid','softmax','cross')
+exs_4 = [(np.array([1,1]),np.array([0,1])),(np.array([0,0]),np.array([0,1])),(np.array([1,0]),np.array([1,0])),(np.array([0,1]),np.array([1,0]))]
+xor_4.train(exs_4,4,10000,0.08)
+for xin in [np.array([1,1]),np.array([0,0]),np.array([1,0]),np.array([0,1])]:
+    predit = xor_4.predit(xin)
+    print('XOR_PREDIT4:',xin,predit)
+ 

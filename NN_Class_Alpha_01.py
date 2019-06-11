@@ -88,8 +88,10 @@ class NN:
             y_dim = 1
             
         for layer in self.neurons:
-            self.weights.append(np.random.rand(x_dim,layer))
-            self.bias.append(np.random.rand(layer))
+           # self.weights.append(np.random.rand(x_dim,layer))
+            self.weights.append(np.random.uniform(-1,1,(x_dim,layer)))
+            #self.bias.append(np.random.rand(layer))
+            self.bias.append(np.random.uniform(-1,1,layer))
             x_dim = self.weights[-1].shape[1]
         self.weights.append(np.random.rand(self.neurons[-1],y_dim))
         self.bias.append(np.random.rand(y_dim))
@@ -103,6 +105,13 @@ class NN:
         elif mode == 'back':
             for i in x:
                 result = np.append(result,((1./(1.+ np.exp(-i)))*(1.-(1./(1.+np.exp(-i))))))
+        return result
+    
+    def act_sig_a(self,x,mode = 'ford'):
+        if mode == 'ford':
+            result = 1./(1.+np.exp(-x))            
+        elif mode == 'back':
+            result = 1./1.+ np.exp(-x)*(1.-(1./(1.+np.exp(-x))))
         return result
     
     def act_sign(self,x):
@@ -267,14 +276,14 @@ xor_2.train(exs_2,4,50000,0.1)
 for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]:
     predit = xor_2.predit(xin)
     print('XOR_PREDIT2:',xin,predit)
-"""
+
 xor_3 = NN([10],'sigmoid','softmax','cross')
 exs_3 = [(np.array([1,1]),np.array([0,1])),(np.array([-1,-1]),np.array([0,1])),(np.array([1,-1]),np.array([1,0])),(np.array([-1,1]),np.array([1,0]))]
 xor_3.train(exs_3,4,10000,0.1)
 for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]:
     predit = xor_3.predit(xin)
     print('XOR_PREDIT3:',xin,predit)
-
+"""
 
 xor_4 = NN([10],'sigmoid','softmax','cross')
 exs_4 = [(np.array([1,1]),np.array([0,1])),(np.array([0,0]),np.array([0,1])),(np.array([1,0]),np.array([1,0])),(np.array([0,1]),np.array([1,0]))]

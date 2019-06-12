@@ -207,7 +207,7 @@ class NN:
     
 
 
-    def train(self,examples,batchsize = 4,epoch = 1,learning_rate =0.1):
+    def train(self,examples,samplesize = 4,epoch = 1,learning_rate =0.1): # This is batch train if samplesize = example size
         loss = 0
         loss_log = []
         i_log = []
@@ -218,16 +218,16 @@ class NN:
                 i_log.append(i)
                 print ('Total loss at epoch',i, loss)
             weights,bias = self.weights,self.bias #update the weights and bias after one epoch
-            for example in examples[:batchsize]:
+            for example in examples[:samplesize]:
                 y_pred = self.feed_forward(weights,bias,example[0]) #use the same weights and bias to calculate )
                 loss = self.loss_func(example[1],y_pred,'ford')
                 initial_grad = self.loss_func(example[1],y_pred,'back')
                 weight_grad,bias_grad = self.backward(initial_grad,weights,bias)
                 for j in range(len(self.weights)):
-                    self.weights[j] = self.weights[j] -  learning_rate* (1./batchsize)* weight_grad[j]             
+                    self.weights[j] = self.weights[j] -  learning_rate* (1./samplesize)* weight_grad[j]             
                 for k in range(len(self.bias)):
-                    self.bias[k] = self.bias[k] - learning_rate* (1./batchsize)* bias_grad[k]
-                loss +=(1./batchsize)*loss
+                    self.bias[k] = self.bias[k] - learning_rate* (1./samplesize)* bias_grad[k]
+                loss +=(1./samplesize)*loss
         plt.ylabel('Total Loss')
         plt.xlabel('Epoch')
         plt.plot(i_log,loss_log)
@@ -235,7 +235,70 @@ class NN:
         self.final_weights = self.weights
         self.final_bias = self.bias
         
-        
+    def mini_batch_train(self,examples,sample_size,batch_size = 4,epoch = 1,learning_rate =0.1):
+        if sample_size < batch_size:
+            print(' sample_size < batch_size!!')
+            return None
+        examples = examples[:sample_size]
+        examples = [examples[i:i+batch_size] for i in range(0,len(examples),batch_size)]
+        loss = 0
+        loss_log = []
+        i_log = []
+        self.initialisation(examples[0][0][0],examples[0][0][1])
+        for i in range (epoch):
+            if i%100 == 0 and i!=0:
+                loss_log.append(loss)
+                i_log.append(i)
+                print ('Total loss at epoch',i, loss)
+            for batch in examples:
+                weights,bias = self.weights,self.bias # update weights and bias after calculation for each batch
+                for example in batch:
+                    y_pred = self.feed_forward(weights,bias,example[0]) #use the same weights and bias to calculate )
+                    loss = self.loss_func(example[1],y_pred,'ford')
+                    initial_grad = self.loss_func(example[1],y_pred,'back')
+                    weight_grad,bias_grad = self.backward(initial_grad,weights,bias)
+                    #weight_grad_buffer = weight_grad_buffer + weight_grad
+                    #bias_grad_buffer = bias_grad_buffer + bias_grad 
+                for j in range(len(self.weights)):
+                    self.weights[j] = self.weights[j] -  learning_rate* (1./batch_size)* weight_grad[j]             
+                for k in range(len(self.bias)):
+                    self.bias[k] = self.bias[k] - learning_rate* (1./batch_size)* bias_grad[k]
+                loss +=(1./batch_size)*loss
+        plt.ylabel('Total Loss')
+        plt.xlabel('Epoch')
+        plt.plot(i_log,loss_log)
+        plt.show()
+        self.final_weights = self.weights
+        self.final_bias = self.bias
+
+    def stocha_train(self,examples,sample_size,epoch = 1,learning_rate =0.1):
+        examples = examples[:sample_size]
+        loss = 0
+        loss_log = []
+        i_log = []
+        self.initialisation(examples[0][0],examples[0][1])
+        for i in range (epoch):
+            if i%100 == 0 and i!=0:
+                loss_log.append(loss)
+                i_log.append(i)
+                print ('Total loss at epoch',i, loss)
+            for example in examples:
+                weights,bias = self.weights,self.bias #update weights and bias after calculation for each example
+                y_pred = self.feed_forward(weights,bias,example[0]) #use the same weights and bias to calculate )
+                loss = self.loss_func(example[1],y_pred,'ford')
+                initial_grad = self.loss_func(example[1],y_pred,'back')
+                weight_grad,bias_grad = self.backward(initial_grad,weights,bias)
+                for j in range(len(self.weights)):
+                    self.weights[j] = self.weights[j] -  learning_rate* weight_grad[j]             
+                for k in range(len(self.bias)):
+                    self.bias[k] = self.bias[k] - learning_rate*bias_grad[k]
+                loss += loss
+        plt.ylabel('Total Loss')
+        plt.xlabel('Epoch')
+        plt.plot(i_log,loss_log)
+        plt.show()
+        self.final_weights = self.weights
+        self.final_bias = self.bias
         
     def predit(self,x):
         if not self.final_weights or not self.final_bias:
@@ -273,7 +336,7 @@ xor_3.train(exs_3,4,10000,0.1)
 for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]:
     predit = xor_3.predit(xin)
     print('XOR_PREDIT3:',xin,predit)
-"""
+
 
 xor_4 = NN([10],'sigmoid','softmax','cross')
 exs_4 = [(np.array([1,1]),np.array([0,1])),(np.array([0,0]),np.array([0,1])),(np.array([1,0]),np.array([1,0])),(np.array([0,1]),np.array([1,0]))]
@@ -281,4 +344,4 @@ xor_4.train(exs_4,4,10000,0.08)
 for xin in [np.array([1,1]),np.array([0,0]),np.array([1,0]),np.array([0,1])]:
     predit = xor_4.predit(xin)
     print('XOR_PREDIT4:',xin,predit)
- 
+"""

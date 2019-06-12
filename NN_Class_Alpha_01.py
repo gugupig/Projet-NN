@@ -96,22 +96,12 @@ class NN:
         self.weights.append(np.random.rand(self.neurons[-1],y_dim))
         self.bias.append(np.random.rand(y_dim))
     
+ 
     def act_sig(self,x,mode = 'ford'):
-        result = np.array([])
-        
-        if mode == 'ford':            
-            for i in x:
-                result = np.append(result,(1./(1.+np.exp(-i))))
-        elif mode == 'back':
-            for i in x:
-                result = np.append(result,((1./(1.+ np.exp(-i)))*(1.-(1./(1.+np.exp(-i))))))
-        return result
-    
-    def act_sig_a(self,x,mode = 'ford'):
         if mode == 'ford':
             result = 1./(1.+np.exp(-x))            
         elif mode == 'back':
-            result = 1./1.+ np.exp(-x)*(1.-(1./(1.+np.exp(-x))))
+            result = 1./(1.+ np.exp(-1*x))*(1.-(1./(1.+np.exp(-1*x))))
         return result
     
     def act_sign(self,x):

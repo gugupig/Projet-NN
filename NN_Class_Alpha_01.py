@@ -139,7 +139,19 @@ class NN:
         return jacobian
     
     def act_relu(self,x,mode = 'ford'):
-        pass
+		if mode == 'ford': # the relu activate fonction
+			return np.maximum(0,z)
+
+		elif mode == 'back': # derivatives of the ReLU fonction
+			# vector of partials derivatives of the ReLU fonction has the same shape as the z at the same layer
+			da_dz= z
+			# if z>0, the partial derivative da/dz= 1
+			da_dz[z>0] = 1
+			# if z<=0, the partial derivative da/dz = 0
+			da_dz[z<=0] = 0
+			# retourne gradient of ReLU fonction 
+			return da_dz
+        
     
 
     def loss_cross_entro(self,y_gold,y_pred,mode = 'ford'):

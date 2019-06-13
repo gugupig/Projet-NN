@@ -7,6 +7,7 @@ Created on Tue Mar 26 10:37:38 2019
 import numpy as np
 #from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
+import random
 
 
 class NN:
@@ -46,19 +47,14 @@ class NN:
         else:
             raise Exception('Please specify loss funciton')
             
-            
-    def vector_multiply(self,a,b):
-        if a.shape == ():
-            multiply = np.zeros((1,b.shape[0]))
-            for i in range(1):
-                for j in range(b.shape[0]):
-                    multiply[i][j] = a*b[j]
+
+
+    def tensor_product(self,a,b):
+        if a.shape == ():  
+            tp = np.tensordot(a,b,axes = 0).reshape((1,b.shape[0]))
         else:
-            multiply = np.zeros((a.shape[0],b.shape[0]))
-            for i in range(a.shape[0]):
-                for j in range(b.shape[0]):
-                    multiply[i][j] = a[i]*b[j]
-        return multiply
+            tp = np.tensordot(a,b,axes = 0)
+        return tp
             
     def feed_forward(self,weights,bias,x):
         curr_input = x
@@ -145,16 +141,7 @@ class NN:
     def act_relu(self,x,mode = 'ford'):
         pass
     
-    """
-    def loss_cross_entro(self,y_gold,y_pred,mode = 'ford'):
-        index_gold = np.nonzero(y_gold)[0][0]    #one-hot version
-        if mode == 'ford':
-            loss = -1*(np.log(y_pred[index_gold]))
-            return loss
-        if mode == 'back':
-            return -1/y_pred[index_gold]
 
-    """
     def loss_cross_entro(self,y_gold,y_pred,mode = 'ford'):
         index_gold = np.nonzero(y_gold)[0][0]
         dot_product = np.dot(-1*y_gold,np.log(y_pred))
@@ -201,7 +188,7 @@ class NN:
                 #dl_dz = np.dot(dl_da,self.activate(inverse_z[i],'back').reshape(dl_da.shape).T)
                 #dl_dz = np.multiply(dl_da , self.activate(inverse_z[i],'back'))
             dl_da = np.dot(inverse_weights[i],dl_dz)        
-            weight_grad.append((self.vector_multiply(dl_dz.T,inverse_act[i+1])).T)      
+            weight_grad.append((self.tensordot(dl_dz.T,inverse_act[i+1])).T)      
             bias_grad.append(dl_dz)
         return weight_grad[::-1],bias_grad[::-1]
     
@@ -306,6 +293,38 @@ class NN:
         else:
             return self.feed_forward(self.final_weights,self.final_bias,x)
 
+    def sample_train(self,examples,sample_size,sample_qunt,epoch,learning_rate):
+        loss = 0
+        loss_log = []
+        i_log = []
+        self.initialisation(examples[0][0],examples[0][1])
+        for t in range(epoch):
+            if t%50 == 0 and t!=0:
+                loss_log.append(loss)
+                i_log.append(t)
+                print ('Total loss at epoch',t, loss)            
+            for i in range(sample_qunt):
+                train_samples = random.sample(examples,sample_size)
+                weights,bias = self.weights,self.bias
+                for example in train_samples:
+                    y_pred = self.feed_forward(weights,bias,example[0]) #use the same weights and bias to calculate )
+                    loss = self.loss_func(example[1],y_pred,'ford')
+                    initial_grad = self.loss_func(example[1],y_pred,'back')
+                    weight_grad,bias_grad = self.backward(initial_grad,weights,bias)
+                for j in range(len(self.weights)):
+                    self.weights[j] = self.weights[j] -  learning_rate* (1./sample_size)* weight_grad[j]             
+                for k in range(len(self.bias)):
+                    self.bias[k] = self.bias[k] - learning_rate* (1./sample_size)* bias_grad[k]
+                loss +=(1./sample_size)*loss                    
+        plt.ylabel('Total Loss')
+        plt.xlabel('Epoch')
+        plt.plot(i_log,loss_log)
+        plt.show()
+        self.final_weights = self.weights
+        self.final_bias = self.bias
+
+
+
 """
 xor = NN([2],'sign','sign','cross')
 xor.weights = [np.array([[-1,1],[-1,1]]),np.array([1,1])]
@@ -344,4 +363,42 @@ xor_4.stocha_train(exs_4,4,10000,0.08)
 for xin in [np.array([1,1]),np.array([0,0]),np.array([1,0]),np.array([0,1])]:
     predit = xor_4.predit(xin)
     print('XOR_PREDIT4:',xin,predit)
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+"""----------TRASH CAN------------------------------            
+    def vector_multiply(self,a,b):
+        if a.shape == ():
+            multiply = np.zeros((1,b.shape[0]))
+            for i in range(1):
+                for j in range(b.shape[0]):
+                    multiply[i][j] = a*b[j]
+        else:
+            multiply = np.zeros((a.shape[0],b.shape[0]))
+            for i in range(a.shape[0]):
+                for j in range(b.shape[0]):
+                    multiply[i][j] = a[i]*b[j]
+        return multiply
+        
+        
+        
+            def loss_cross_entro(self,y_gold,y_pred,mode = 'ford'):
+        index_gold = np.nonzero(y_gold)[0][0]    #one-hot version
+        if mode == 'ford':
+            loss = -1*(np.log(y_pred[index_gold]))
+            return loss
+        if mode == 'back':
+            return -1/y_pred[index_gold]
+        
+        
 """

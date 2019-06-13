@@ -246,7 +246,7 @@ class NN:
         i_log = []
         self.initialisation(examples[0][0][0],examples[0][0][1])
         for i in range (epoch):
-            if i%100 == 0 and i!=0:
+            if i%50 == 0 and i!=0:
                 loss_log.append(loss)
                 i_log.append(i)
                 print ('Total loss at epoch',i, loss)
@@ -278,7 +278,7 @@ class NN:
         i_log = []
         self.initialisation(examples[0][0],examples[0][1])
         for i in range (epoch):
-            if i%100 == 0 and i!=0:
+            if i%1 == 0 and i!=0:
                 loss_log.append(loss)
                 i_log.append(i)
                 print ('Total loss at epoch',i, loss)
@@ -340,7 +340,7 @@ for xin in [np.array([1,1]),np.array([-1,-1]),np.array([1,-1]),np.array([-1,1])]
 
 xor_4 = NN([10],'sigmoid','softmax','cross')
 exs_4 = [(np.array([1,1]),np.array([0,1])),(np.array([0,0]),np.array([0,1])),(np.array([1,0]),np.array([1,0])),(np.array([0,1]),np.array([1,0]))]
-xor_4.train(exs_4,4,10000,0.08)
+xor_4.stocha_train(exs_4,4,10000,0.08)
 for xin in [np.array([1,1]),np.array([0,0]),np.array([1,0]),np.array([0,1])]:
     predit = xor_4.predit(xin)
     print('XOR_PREDIT4:',xin,predit)

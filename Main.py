@@ -38,30 +38,32 @@ with open(path_train,'r',encoding = 'utf-8') as file:
                            sentence = []
         if line!='\n' and (not line.startswith('#')):
                            line = line.split('\t')[:4]
-                           tag = line[3]
-                           cap = line[1].isupper()
-                           word = line[1].lower()
-                           sentence.append(line[1])
-                           if tag not in tags:
-                               tags.append(tag)
-                           if word not in words:
-                               words.append(word)
-                           if len(sentence)<5:
-                               pass
-                           else:
-                               if i == 0:
-                                   ww = ([word,'N/A','N/A',sentence[1],sentence[2]],tag)
-                               elif i == 1:
-                                   ww =([word,'N/A',sentence[0],sentence[2],sentence[3]],tag)
-                               elif i == len(sentence):
-                                   ww = ([word,sentence[-2],sentence[-3],'N/A','N/A'],tag)
-                               elif i == len(sentence) -1 :
-                                   ww = ([word,sentence[-3],sentence[-4],sentence[-1],'N/A'],tag)
+                           idx = line[0]
+                           if len(idx)<3:
+                               tag = line[3]
+                               cap = line[1].isupper()
+                               word = line[1].lower()
+                               sentence.append(line[1])
+                               if tag not in tags:
+                                   tags.append(tag)
+                               if word not in words:
+                                   words.append(word)
+                               if len(sentence)<5:
+                                   pass
                                else:
-                                   ww = ([word,sentence[i-2],sentence[i-1],sentence[i+1],sentence[i+2]],tag)
-                               print(i)
-                               i= i+1
-                               word_windows.append(ww)
+                                   if i == 0:
+                                       ww = ([word,'N/A','N/A',sentence[1],sentence[2]],tag)
+                                   elif i == 1:
+                                       ww =([word,'N/A',sentence[0],sentence[2],sentence[3]],tag)
+                                   elif i == len(sentence):
+                                       ww = ([word,sentence[-2],sentence[-3],'N/A','N/A'],tag)
+                                   elif i == len(sentence) -1 :
+                                       ww = ([word,sentence[-3],sentence[-4],sentence[-1],'N/A'],tag)
+                                   else:
+                                       ww = ([word,sentence[i-2],sentence[i-1],sentence[i+1],sentence[i+2]],tag)
+                                   print(i)
+                                   i= i+1
+                                   word_windows.append(ww)
                                                
 '''                                              
 sentences = []
@@ -77,14 +79,15 @@ with open(path_train,'r',encoding = 'utf-8') as file:
                            #sentence = []
         if line!='\n' and (not line.startswith('#')):
                            line = line.split('\t')[:4]
-                           tag = line[3]
-                           cap = line[1].isupper()
-                           word = line[2].lower()
-                           sentence.append((word,tag))
-                           if tag not in tags:
-                               tags.append(tag)
-                           if word not in words:
-                               words.append(word)
+                           if len(idx)<3:# 过滤掉 2-3 des _ _ 
+                               tag = line[3]
+                               cap = line[1].isupper()
+                               word = line[2].lower()
+                               sentence.append((word,tag))
+                               if tag not in tags:
+                                   tags.append(tag)
+                               if word not in words:
+                                   words.append(word)
         if line == '\n':
             sentences.append(sentence)
             sentence = []
@@ -146,14 +149,15 @@ with open(path_test,'r',encoding = 'utf-8') as file:
                            #sentence = []
         if line!='\n' and (not line.startswith('#')):
                            line = line.split('\t')[:4]
-                           tag = line[3]
-                           cap = line[1].isupper()
-                           word = line[2].lower()
-                           sentence.append((word,tag))
-                           #if tag not in tags:
-                               #tags.append(tag)
-                           #if word not in words:
-                               #words.append(word)
+                           if len(idx)<3:# 过滤掉 2-3 des _ _ 
+                               tag = line[3]
+                               cap = line[1].isupper()
+                               word = line[2].lower()
+                               sentence.append((word,tag))
+                               #if tag not in tags:
+                                   #tags.append(tag)
+                               #if word not in words:
+                                   #words.append(word)
         if line == '\n':
             sentences_test.append(sentence)
             sentence = []

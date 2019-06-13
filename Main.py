@@ -82,7 +82,7 @@ with open(path_train,'r',encoding = 'utf-8') as file:
                            if len(idx)<3:# 过滤掉 2-3 des _ _ 
                                tag = line[3]
                                cap = line[1].isupper()
-                               word = line[2].lower()
+                               word = line[1].lower()
                                sentence.append((word,tag))
                                if tag not in tags:
                                    tags.append(tag)
@@ -152,7 +152,7 @@ with open(path_test,'r',encoding = 'utf-8') as file:
                            if len(idx)<3:# 过滤掉 2-3 des _ _ 
                                tag = line[3]
                                cap = line[1].isupper()
-                               word = line[2].lower()
+                               word = line[1].lower()
                                sentence.append((word,tag))
                                #if tag not in tags:
                                    #tags.append(tag)
@@ -161,10 +161,6 @@ with open(path_test,'r',encoding = 'utf-8') as file:
         if line == '\n':
             sentences_test.append(sentence)
             sentence = []
-q = ('_', '_')
-for s in sentences_test:
-    s = [x for x in s if x != q]
-    
 
 #tags.append('UNK')                                                  
 

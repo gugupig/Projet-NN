@@ -1,26 +1,18 @@
 # -*- coding: utf-8 -*- 
-""" 
+'''
 Created on Tue Mar 26 10:37:38 2019 
  
 @author: Kurros LAN
 
 This is the main module of the Neural network(Vectorisation Version):
 Main components:
-Class variables :
-1.neurons: taking a list of integers as input, each integer represents the number of neurons at that layer who's amount equals to the length of this list.
------------------------------------------------------------
-2.weight, bias: list of weight matrix and bias vectors.
------------------------------------------------------------
-3.z, act: z is the pre-activated value(affine combination) for the corresponding layer and act is the post-activated value.
------------------------------------------------------------
-4.loss_log,accuracy_log,lr_log: list of loss,accuracy and learning rate who are updated every 50 epochs.
+
 
 Class method:
-1.initialisation: build  lists of randomly generated (uniform distribution from -1 to 1) weight matrix and bias vectors and the inistilisation_xavier method use 
-Xavier initialisation to  generate the weight matrix
+
 -----------------------------------------------------------
-2.forward, backward: forward and backwards propagation, taking an N*D matrix of examples (N = amount of examples, D = dimension of examples) as input, 
-they are vectorized version of the same function in the NN_Non_Vec.py.
+
+
 -----------------------------------------------------------
 3.mini_batch_train: train with mini batch, taking x and y separately where y is a sparse matrix, the default value of beta (momentum) is set to 0, 
 and the default value of decay rate is set to 0.
@@ -30,17 +22,30 @@ the additional dimension  is for the tag id which will be converted to an M*D sp
 -----------------------------------------------------------
 5.learning_rate_finder: apply increasing learning rate on random mini-batch to determinate the right learning rate.
 -----------------------------------------------------------
-6.Clr_train: an experiment on CLR (Cyclical Learning Rates).
+6.Clr_train: an experiment on CLR (Cyclical Learning Rates) method.
 
-
-""" 
+'''
  
  
 import numpy as np 
 import time
  
- 
+''' 
 #Vectorized version of NN class 
+Class variables :
+1.neurons: taking a list of integers as input, each integer represents 
+the number of neurons at that layer who's amount equals to the length of this list.
+-----------------------------------------------------------
+2.weight, bias: list of weight matrix and bias vectors.
+-----------------------------------------------------------
+3.z, act: z is the pre-activated value(affine combination) for
+ the corresponding layer and act is the post-activated value.
+-----------------------------------------------------------
+4.loss_log,accuracy_log,lr_log: list of loss,accuracy and 
+learning rate who are updated every 50 epochs.
+'''
+
+
 class NN_Vec: 
     def __init__(self, neurons): 
         self.neurons = neurons 
@@ -58,7 +63,14 @@ class NN_Vec:
         self.output_func = self.softmax 
         self.loss_func = self.loss_cross_entropy
         self.initialisation = self.initialisation_xavier
+        self.forward = self.forward_normal
  
+    '''
+    initialisation: build  lists of randomly generated (uniform distribution from -1 to 1)
+    weight matrix and bias vectors and the inistilisation_xavier method useXavier initialisation to  generate the weight matrix.\
+    '''    
+
+
     def initialisation_normal(self, x, y ): 
         self.weights = [] 
         self.bias = [] 
@@ -71,7 +83,10 @@ class NN_Vec:
          
         self.weights.append(np.random.uniform(-1, 1, (self.neurons[-1], y.shape[1]))) 
         self.bias.append(np.random.uniform(-1, 1, (1, y.shape[1]))) 
-    
+    '''
+    Xavier initialisation with random number genreted in the range between
+    -1*4*(np.sqrt(6)/np.sqrt(dim_in+dim_out)) and 1*4*(np.sqrt(6)/np.sqrt(dim_in+dim_out))
+    ''' 
     def initialisation_xavier(self,x,y):
         self.weights = [] 
         self.bias = [] 
@@ -89,9 +104,13 @@ class NN_Vec:
         B =  1*4*(np.sqrt(6)/np.sqrt(self.neurons[-1] +  y.shape[1]))
         self.weights.append(np.random.uniform(A, B, (self.neurons[-1], y.shape[1]))) 
         self.bias.append(np.zeros((1, y.shape[1]))) 
-        
+    '''
+    forward, backward: forward and backwards propagation, 
+    taking an N*D matrix of examples (N = amount of examples, D = dimension of examples) as input, 
+    they are vectorized version of the same function in the NN_Non_Vec.py.
+    '''        
  
-    def forward(self, weights, bias, x): 
+    def forward_normal(self, weights, bias, x): 
         curr_input = x 
         curr_output = x 
         self.act = [x] 
@@ -107,8 +126,46 @@ class NN_Vec:
                 curr_output = self.output_func(curr_input) 
             self.act.append(curr_output) 
         return curr_output 
-    
-
+    '''
+    forward_dropout is the implentation of dropout method at first layer
+    '''
+     
+    def forward_dropout(self, weights, bias, x,prob = 0.8): 
+        curr_input = x 
+        curr_output = x 
+        self.act = [x] 
+        self.z = [] 
+        counter = 0 
+        for layer in range(len(self.weight)):
+            if layer == 0:
+                dropout = np.random.rand(x.shape[0],x.shape[1])< prob
+                curr_output = curr_output * dropout
+                curr_input = np.dot(curr_output,self.weight[layer]) + self.bias[layer]
+                self.z.append(curr_input)
+            else: 
+                curr_input = np.dot(curr_output,self.weight[layer]) + self.bias[self.weight]
+                self.z.append(curr_input) 
+            counter += 1 
+            if counter < len(weights): 
+                curr_output = self.activate(curr_input) 
+            else: 
+                curr_output = self.output_func(curr_input) 
+            self.act.append(curr_output) 
+        return curr_output 
+    '''
+    sigmoid function,back = derivative
+    '''
+    def act_sig(self, x, mode='ford'): 
+        if mode == 'ford': 
+            result = 1. / (1. + np.exp(-x)) 
+        elif mode == 'back': 
+            result = self.act_sig(x) * (1 - self.act_sig(x)) 
+            #result = 1. / (1. + np.exp(-1 * x)) * (1. - (1. / (1. + np.exp(-1 * x)))) 
+        return result 
+    '''
+    vectorized softmax:derivative of softmax for an 1*D vectors is an D*D jacobian matrix
+    this function takes a matrix of N vectors and return a ND*D jacobian matrix
+    '''
     def softmax(self, x, mode='ford'): 
         exp = np.exp(x - np.max(x, axis=1, keepdims=True)) 
         if mode == 'ford': 
@@ -127,12 +184,13 @@ class NN_Vec:
                 next_block = diag - np.dot(sub,sub.T) 
                 block = np.concatenate((block,next_block)) 
             return block 
-     
+        
     def act_sign(self,x): 
         y = x.copy() 
         y[y < 0 ] = -1 
         y[y > 0 ] = 1 
         return y 
+  
     def act_Relu(self,x,mode ='ford'):
         x_c = x.copy()
         if mode == 'ford':    
@@ -151,7 +209,13 @@ class NN_Vec:
                 nozeros = (-1 / (y_pred*y_gold)) 
                 nozeros[nozeros == -np.inf] = 0 
             return nozeros 
-     
+    '''
+    this function mainly for the first step of backpropagation,where 
+    the derivative of softmax is not a square matrix, so it's not compatible with the dot product
+    this function takes an ND*D matrix (dlda) and an N*D matrix and output 
+    and N*D matrix (dadz), that means every D line of dlda(an N*D matrix) 
+    will be multiplied by 1 line of dadz (a 1*D vector)
+    '''    
     def multi_dot(self,dl_da,da_dz): 
         axe_x = dl_da.shape[0] 
         axe_y = dl_da.shape[1] 
@@ -160,7 +224,10 @@ class NN_Vec:
         dot = np.einsum('ijp,ipj->ij',dlda,dadz) 
         return dot 
              
-     
+    '''
+    three variable are calculated at each layer:
+        da_dz,dl_dz and dl_dw
+    '''     
      
     def backward(self, initial_grad, weights, bias): 
         dl_da = initial_grad 
@@ -174,7 +241,6 @@ class NN_Vec:
                 da_dz = self.output_func(inverse_z[layer],'back') 
                 dl_dz = self.multi_dot(dl_da,da_dz) 
             else: 
- 
                 da_dz = self.activate(inverse_z[layer], 'back') 
                 dl_dz = (np.multiply(dl_da.T, da_dz)) 
             dl_da = np.dot(inverse_weights[layer],dl_dz.T) 
@@ -185,18 +251,25 @@ class NN_Vec:
  
     def predit(self, x): 
         return self.forward(self.weights, self.bias,x) 
- 
-    def mini_batch_train(self,X,Y,batch_size,epoch,learning_rate = 0.1,decay = 0,beta = 0 ,validation = False,x_val = 0 ,y_val = 0): 
+    '''
+    the core function, other training functions in this class is for experiment purpose
+    the decay rate for decreasing learning rate at every x epoch
+    beta: parameter for the momentum, momentum will be updated at every batch 
+    and set to zero at each epoch
+    at every x epoch, the performance of the network (loss on the training set, 
+    accuracy and loss on the validation set ) will be recorded 
+    ''' 
+    def mini_batch_train(self,X,Y,batch_size,epoch,learning_rate = 0.1,decay = 1,beta = 0 ,validation = False,x_val = 0 ,y_val = 0): 
         print('--Training begins--') 
         loss = 0 
         self.loss_log = [0] 
         self.i_log = [] 
         self.lr_log = [] 
         self.initialisation(X, Y) 
-        v_w = [0 for i in range(len(self.weights))] # list for momentum
-        v_b = [0 for i in range(len(self.weights))] 
         for i in range(epoch): 
-            if i%50 == 0 and i !=0: 
+            if i%25 == 0 and i !=0: 
+                learning_rate = (1./(1. + decay*i))*learning_rate 
+                #learning_rate = learning_rate*0.1
                 print('Total loss at epoch', i,loss) 
                 print('Diffrence:',loss - self.loss_log[-1]) 
                 self.loss_log.append(loss) 
@@ -211,8 +284,9 @@ class NN_Vec:
                     print('---------------------------------')
                 if decay != 0: 
                     self.lr_log.append(learning_rate) 
+            v_w = [0 for i in range(len(self.weights))] # initialise list for momentum
+            v_b = [0 for i in range(len(self.weights))] 
             for i in range(0,X.shape[0],batch_size): 
-                learning_rate = (1./(1. + decay*i))*learning_rate #using decay learning rate method 
                 slice_x = X[i:i+batch_size] 
                 slice_y = Y[i:i+batch_size] 
                 weights, bias = self.weights,self.bias 
@@ -228,13 +302,80 @@ class NN_Vec:
                     v_b[k] = beta*v_b[k] + (1-beta)*bias_grad[k] 
                     self.bias[k] = self.bias[k] - learning_rate *1/slice_x.shape[0]*v_b[k] 
                 loss += batch_loss #cumulate loss for each mini-batch
+                
+       
+        
+    def stocha_train_early_stopping(self,X,Y,batch_size,stop_condition_1 = 0.9,stop_condition_2 = 50000,learning_rate = 0.1,decay = 1,beta = 0 ,x_val = 0 ,y_val = 0): 
+        print('--Training begins--') 
+        loss = 0 
+        self.loss_log = [0] 
+        self.i_log = [] 
+        self.lr_log = [] 
+        self.initialisation(X, Y)
+        new_val_loss = 0
+        new_accuracy = 0
+        i = 0
+        v_w = [0 for i in range(len(self.weights))]
+        v_b = [0 for i in range(len(self.weights))]
+        stop_counter = 0
+        while True:
+            if i == 0:
+                accuracy,val_loss = self.accuracy_test(x_val,y_val) 
+            i +=1
+            if decay != 0: 
+                self.lr_log.append(learning_rate)
+            if i%25 == 0 and i !=0: 
+                learning_rate = (1./(1. + decay*i))*learning_rate 
+                #learning_rate = learning_rate*0.1
+                print('Total loss at epoch', i,loss) 
+                print('Diffrence:',loss - self.loss_log[-1]) 
+                self.loss_log.append(loss) 
+                loss = 0 
+                self.i_log.append(i) 
+                self.val_loss_log.append(val_loss)
+                self.accuracy_log.append(accuracy)
+                print('Accuracy on val:' ,accuracy)
+                print('Loss on val:',val_loss)
+                print('---------------------------------')
+            #accuracy,val_loss = self.accuracy_test(x_val,y_val) 
+            sample_idxs = np.unique(np.random.randint(X.shape[0], size= batch_size))
+            x_samples = X[sample_idxs]
+            y_samples = Y[sample_idxs]
+            weights, bias = self.weights,self.bias
+            weights_buffer,bias_buffer = self.weights,self.bias
+            momentum_bias = v_b
+            momentun_weights = v_w
+            y_pred = self.forward(weights, bias,x_samples) 
+            batch_loss = 1/X.shape[0]*self.loss_func(y_samples, y_pred,'ford') 
+            initial_grad = self.loss_func(y_samples, y_pred,'back') 
+            weights_grad, bias_grad = self.backward(initial_grad,weights,bias)
+            for j in range(len(self.weights)):
+                v_w[j] = beta*v_w[j] + (1-beta)*weights_grad[j]  
+                self.weights[j] = self.weights[j] - learning_rate * 1/x_samples.shape[0]*v_w[j] 
+            for k in range(len(self.bias)): 
+                v_b[k] = beta*v_b[k] + (1-beta)*bias_grad[k] 
+                self.bias[k] = self.bias[k] - learning_rate *1/x_samples.shape[0]*v_b[k]
+            new_accuracy,new_val_loss = self.accuracy_test(x_val,y_val)
+            if new_accuracy < accuracy:
+                stop_counter += 1
+                v_b = momentum_bias
+                v_w = momentun_weights
+                self.weights = weights_buffer
+                self.bias = bias_buffer
+            else:
+                stop_counter -= 1
+                accuracy = new_accuracy
+                val_loss = new_val_loss
+            loss += batch_loss #cumulate loss for each mini-batch
+            if accuracy >= stop_condition_1:
+                print('Training Complete')
+                break
+            if stop_counter >stop_condition_2:
+                print('Can not converge')
+                break
+         
  
-         
-         
-         
-         
- 
-    def accuracy_test(self,X,Y,onehot = True,boundary = 0.9): 
+    def accuracy_test(self,X,Y,onehot = True,boundary = 0.5): 
         result = self.predit(X)
         sample_loss = 1/X.shape[0] * self.loss_func(Y,result)
         if onehot == True: 
@@ -272,8 +413,17 @@ class NN_Vec:
                 v_b[k] = beta*v_b[k] + (1-beta)*bias_grad[k] 
                 self.bias[k] = self.bias[k] - learning_rate *1/X.shape[0]*bias_grad[k] 
             loss += 1/X.shape[0] * loss 
+  
+            
+            
+            
+    
  
- 
+    '''
+    the same function but accept a single dense matrix (N*D+1), 
+    at every mini-batch this matrix, will be converted into 2 matrix :
+    X and Y where Y is the sparse matrix for the tag
+    ''' 
  
     def mini_batch_train_no_sparse(self,training_set,batch_size,epoch,learning_rate,beta = 0, validation = 0): 
         print('--Training begins--') 
@@ -323,17 +473,19 @@ class NN_Vec:
         print('--Training begins--') 
         self.initialisation(X,Y) 
         loss_log = [] 
-        learning_rate_log = [] 
-        v_w = [0 for i in range(len(self.weights))] 
-        v_b = [0 for i in range(len(self.weights))] 
+        learning_rate_log = []
+        accuracy_log = []
         learning_rate = initial_rate 
         runs = 0 
-        while True:       
+        while True:  
+            v_w = [0 for i in range(len(self.weights))] 
+            v_b = [0 for i in range(len(self.weights))] 
             sample_idxs = np.unique(np.random.randint(X.shape[0], size= sample_size)) 
             x_samples = X[sample_idxs] 
             y_samples = Y[sample_idxs] 
             weights, bias = self.weights,self.bias 
-            y_pred = self.forward(weights, bias,x_samples) 
+            y_pred = self.forward(weights, bias,x_samples)
+            accuracy_log.append(self.accuracy_test(x_samples,y_samples)[0])
             batch_loss = 1/x_samples.shape[0]*self.loss_func(y_samples, y_pred,'ford') 
             initial_grad = self.loss_func(y_samples, y_pred,'back') 
             weights_grad, bias_grad = self.backward(initial_grad,weights,bias) 
@@ -349,11 +501,11 @@ class NN_Vec:
             runs +=1 
             stop_condition = batch_loss > 2 * loss_log[0] 
             if (stop_condition and len(loss_log) > 20) or runs>stop: 
-                return learning_rate_log,loss_log 
+                return learning_rate_log,loss_log,accuracy_log
             
             
             
-    def Clr_train(self,X,Y,batch_size,epoch,learning_rate_0 = 0.1,upbound = 0.5,beta = 0 ,x_val = 0 ,y_val = 0): 
+    def Clr_train(self,X,Y,batch_size,epoch,learning_rate_0 = 0.01,upbound = 0.2,beta = 0 ,x_val = 0 ,y_val = 0): 
         print('--Training begins--') 
         loss = 0 
         self.loss_log = [0] 
@@ -365,7 +517,7 @@ class NN_Vec:
         v_w = [0 for i in range(len(self.weights))] 
         v_b = [0 for i in range(len(self.weights))] 
         for i in range(epoch): 
-            ep_count = 0
+            mini_batch_count = 0
             if i%50 == 0 and i !=0: 
                 if x_val != 0 and y_val != 0: 
                     self.accuracy_log(self.accuracy_test(x_val,y_val)) 
@@ -376,14 +528,16 @@ class NN_Vec:
                 loss = 0 
                 self.i_log.append(i)  
             for i in range(0,X.shape[0],batch_size): 
-                ep_count += 1
-                cycle = 1+(ep_count/2*step)
-                x = abs((ep_count/step) - (2*cycle) + 1)
-                learning_rate = learning_rate_0 + (upbound - learning_rate_0) * max(0,(1-x))
-                print (learning_rate)#using decay learning rate method 
+                mini_batch_count += 1
+                #cycle =  np.float((1+ep_count/2*step))
+                #x = np.abs((ep_count/step) - (2*cycle) + 1)
+                #learning_rate = learning_rate_0 + (upbound - learning_rate_0) * max(0,(1-x))
+                cycle = np.floor(1+mini_batch_count/(2*step))
+                x = np.abs(mini_batch_count/step - 2*cycle + 1)
+                learning_rate = learning_rate_0 + (upbound-learning_rate_0)*np.maximum(0, (1-x))/float(2**(cycle-1)) 
                 slice_x = X[i:i+batch_size] 
                 slice_y = Y[i:i+batch_size] 
-                weights, bias = self.weights,self.bias 
+                weights, bias = self.weights,self.bias
                 y_pred = self.forward(weights, bias,slice_x) 
                 batch_loss = 1/X.shape[0]*self.loss_func(slice_y, y_pred,'ford') 
                 initial_grad = self.loss_func(slice_y, y_pred,'back') 
